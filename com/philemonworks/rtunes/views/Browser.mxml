@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Canvas xmlns:mx="http://www.adobe.com/2006/mxml" width="100%" height="100%" xmlns:helpers="helpers.*">
+	   <mx:Script>
+    <![CDATA[
+    	import com.philemonworks.flex.util.ApplicationContext;
+    	import com.philemonworks.rtunes.controllers.api.TrackController;
+    	import com.philemonworks.rtunes.controllers.impl.TrackControllerClient;
+    	import helpers.Formatter;
+    	import mx.utils.ArrayUtil;
+        import mx.collections.IViewCursor;
+        import mx.collections.ArrayCollection;
+        import mx.rpc.events.ResultEvent;
+        import mx.rpc.events.FaultEvent;
+        
+        private var trekkie:TrackController = ApplicationContext.current.get("TrackController") as TrackController;
+
+        public function refresh():void {
+        	// uses inline callback
+        	trekkie.find_all_genres(populateGenres)
+        	trekkie.find_all_artists(populateArtists)
+        	trekkie.find_all_albums(populateAlbums)
+        }
+        private function changedGenre(event:Event):void {
+        	if (genres.selectedItem == null) { this.refresh(); return }
+        	trekkie.find_all_by_genre(String(genres.selectedItem), populateTracks)
+        }
+        private function changedArtist(event:Event):void {
+        	if (artists.selectedItem == null) { this.refresh(); return }
+        	trekkie.find_all_by_artist(String(artists.selectedItem), populateTracks)        	
+        }
+        private function changedAlbum(event:Event):void {
+        	if (albums.selectedItem == null) { this.refresh(); return }
+        	trekkie.find_all_by_album(String(albums.selectedItem), populateTracks)        	
+        }        
+        private function populateGenres(genresXML:XML):void {
+        	genres.dataProvider = genresXML.s
+        }
+        private function populateArtists(artistsXML:XML):void {
+        	artists.dataProvider = artistsXML.s
+        }        
+        private function populateAlbums(albumsXML:XML):void {
+        	albums.dataProvider = albumsXML.s
+        }         
+        private function populateTracks(tracksXML:XML):void {
+        	grid_tracks.dataProvider = tracksXML.track
+        	if (genres.selectedItem != null) { // genre selected
+        		// update artists
+        		artists.dataProvider = tracksXML..artist
+        		// update albums
+        		albums.dataProvider = tracksXML..albums
+        	}
+        	if (artists.selectedItem != null) { // genre selected
+        		// update genres
+        		genres.dataProvider = tracksXML..genre
+        		// update albums
+        		albums.dataProvider = tracksXML..albums
+        	}
+        	if (albums.selectedItem != null) { // genre selected
+        		// update genres
+        		genres.dataProvider = tracksXML..genres
+        		// update artists
+        		artists.dataProvider = tracksXML..artist
+        	}
+        }        
+    ]]>
+    </mx:Script>
+       
+    <helpers:Formatter id="formathelper" />
+    
+    <mx:VBox width="100%" height="100%">
+    	<mx:HDividedBox height="30%" width="100%">
+		    <mx:List width="200" height="100%" id="genres" change="changedGenre(event)"></mx:List>		
+		    <mx:HDividedBox width="100%" height="100%" >
+				<mx:List width="50%" height="100%" id="artists" change="changedArtist(event)"></mx:List>
+				<mx:List width="50%" height="100%" id="albums" change="changedAlbum(event)"></mx:List>		    	
+		    </mx:HDividedBox>
+    	</mx:HDividedBox>
+		<mx:DataGrid id="grid_tracks" height="70%" width="100%">
+			<mx:columns>
+				<mx:DataGridColumn headerText="Title" dataField="name"/>
+				<mx:DataGridColumn headerText="Artist" dataField="artist"/>
+				<mx:DataGridColumn headerText="Time" textAlign="right">
+					<mx:itemRenderer>
+						<mx:Component>
+							<mx:Text width="100%" text="{outerDocument.formathelper.formatSeconds(data.duration)}" />
+						</mx:Component>
+					</mx:itemRenderer>
+				</mx:DataGridColumn>
+				<mx:DataGridColumn headerText="Genre" dataField="genre"/>
+				<mx:DataGridColumn headerText="Album" dataField="album"/>
+			</mx:columns>
+		</mx:DataGrid>    	
+    </mx:VBox>	
+    
+</mx:Canvas>
